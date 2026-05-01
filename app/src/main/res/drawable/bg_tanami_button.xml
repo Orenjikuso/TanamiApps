@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Mengambil warna hijau utama dari colors.xml yang kita buat tadi -->
+    <solid android:color="@color/brand_500" />
+
+    <!-- Membuat sudut melengkung sesuai standar dimens -->
+    <corners android:radius="@dimen/spacing_8" />
+
+    <!-- Memberi jarak agar teks di dalam tombol tidak terlalu mepet -->
+    <padding
+        android:top="@dimen/spacing_12"
+        android:bottom="@dimen/spacing_12"
+        android:left="@dimen/spacing_16"
+        android:right="@dimen/spacing_16" />
+</shape>
