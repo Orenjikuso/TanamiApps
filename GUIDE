@@ -1,804 +1,511 @@
-<div align="center">
+Saya akan membuat file GUIDE.md berdasarkan konteks dari file-file yang Anda kirimkan. Mari saya analisis struktur project terlebih dahulu dan kemudian buat dokumentasi yang komprehensif.Berdasarkan file-file yang telah Anda berikan, saya akan membuat file `GUIDE.md` yang komprehensif dengan struktur folder dan arahan pengembangan untuk TanamiApps:
 
-# 🌿 TANAMI — Developer Guide
-### *Kompas Teknis Pengembangan Aplikasi Android*
+```markdown name=GUIDE.md
+# 📖 PANDUAN PENGEMBANGAN - TanamiApps
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9+-7F52FF?style=flat-square&logo=kotlin)](https://kotlinlang.org)
-[![Architecture](https://img.shields.io/badge/Architecture-MVVM-green?style=flat-square)](https://developer.android.com/topic/architecture)
-[![Methodology](https://img.shields.io/badge/Methodology-RAD-3D9315?style=flat-square)](https://en.wikipedia.org/wiki/Rapid_application_development)
-[![Design](https://img.shields.io/badge/Design-Figma-F24E1E?style=flat-square&logo=figma)](https://figma.com)
-
-> *"Menanam tumbuhan, Menyiram harapan, Menumbuhkan masa depan."*
-
-</div>
+Dokumentasi ini adalah aturan main **WAJIB** bagi seluruh developer Tanami agar pengerjaan cepat (**RAD**) dan kode tetap terstruktur (**MVVM**).
 
 ---
 
 ## 📋 Daftar Isi
-
-- [Tim & Tanggung Jawab](#-tim--tanggung-jawab)
-- [Struktur Folder](#-struktur-folder)
-- [Design System & Tokens](#-design-system--tokens)
-- [Komponen Kustom](#-komponen-kustom)
-- [Alur Pengembangan Fitur](#-alur-pengembangan-fitur-step-by-step)
-- [Git & RAD Workflow](#-git--rad-workflow)
-- [Konvensi Kode](#-konvensi-kode)
-- [Checklist Sebelum PR](#-checklist-sebelum-pull-request)
+1. [Konfigurasi Teknis](#-1-konfigurasi-teknis)
+2. [Struktur Folder](#-2-struktur-folder-teknis)
+3. [Pembagian Tugas](#-3-pembagian-tugas-task-matrix)
+4. [Aturan Coding & Git](#-4-aturan-coding--git)
+5. [Cara Setup Lokal](#-5-cara-setup-lokal)
+6. [Dependency & Library](#-6-dependency--library)
 
 ---
 
-## 👥 Tim & Tanggung Jawab
-
-> [!IMPORTANT]
-> **Setiap developer wajib membaca bagian ini sebelum menyentuh satu baris kode pun.** Pelanggaran terhadap pembagian modul ini adalah sumber utama merge conflict. Patuhi batasan folder masing-masing.
-
-### 🗂️ Task Matrix
-
-| Developer | Role | Modul Utama | Folder Target | Branch Aktif |
-|-----------|------|-------------|---------------|--------------|
-| **Adam** 👨‍💻 | Project Manager & Developer | Dashboard & IoT | `ui/dashboard/`, `ui/iot/`, `core/network/` | `feature-dashboard-adam` |
-| **Azfa** 🔐 | Auth Specialist | Authentication | `ui/auth/`, `data/repository/AuthRepository` | `feature-auth-azfa` |
-| **Joya** 🌱 | Smart Farming Dev | Monitoring Tanaman | `ui/farming/`, `ui/tanamcare/`, `data/repository/FarmingRepository` | `feature-farming-joya` |
-| **Evan** 🛒 | E-Commerce Dev | Marketplace | `ui/marketplace/`, `data/repository/MarketRepository` | `feature-market-evan` |
-
-> [!WARNING]
-> **Dilarang keras** menyentuh folder milik developer lain tanpa koordinasi terlebih dahulu di grup. Jika ada kebutuhan lintas modul (misal: Joya butuh data auth dari Azfa), gunakan mekanisme **SharedViewModel** atau komunikasi lewat `Repository` — jangan langsung edit file orang lain.
-
----
-
-## 📁 Struktur Folder
-
-Berikut adalah peta lengkap repository. Pahami ini seperti kamu memahami peta kota — sebelum jalan, tahu dulu lokasinya.
-
-```
-tanami-android/
-│
-├── 📦 app/
-│   └── src/main/
-│       ├── java/com/tanami/app/
-│       │   │
-│       │   ├── 🌐 core/
-│       │   │   └── network/                  # [ADAM] Konfigurasi global jaringan
-│       │   │       ├── ApiService.kt         # Definisi semua endpoint Retrofit
-│       │   │       ├── RetrofitClient.kt     # Singleton Retrofit + OkHttp
-│       │   │       └── NetworkResult.kt      # Sealed class: Success / Error / Loading
-│       │   │
-│       │   ├── 💾 data/
-│       │   │   ├── repository/               # Logic pengambilan & caching data
-│       │   │   │   ├── AuthRepository.kt     # [AZFA]
-│       │   │   │   ├── FarmingRepository.kt  # [JOYA]
-│       │   │   │   ├── MarketRepository.kt   # [EVAN]
-│       │   │   │   └── DashboardRepository.kt# [ADAM]
-│       │   │   │
-│       │   │   └── response/                 # Data class mapping JSON dari API
-│       │   │       ├── LoginResponse.kt      # [AZFA]
-│       │   │       ├── SensorResponse.kt     # [JOYA & ADAM]
-│       │   │       ├── PlantStatusResponse.kt# [JOYA]
-│       │   │       └── ProductResponse.kt    # [EVAN]
-│       │   │
-│       │   └── 🖥️ ui/
-│       │       ├── auth/                     # [AZFA]
-│       │       │   ├── LoginFragment.kt
-│       │       │   ├── RegisterFragment.kt
-│       │       │   └── AuthViewModel.kt
-│       │       │
-│       │       ├── dashboard/                # [ADAM]
-│       │       │   ├── DashboardFragment.kt
-│       │       │   └── DashboardViewModel.kt
-│       │       │
-│       │       ├── farming/                  # [JOYA]
-│       │       │   ├── FarmingFragment.kt
-│       │       │   ├── FarmingViewModel.kt
-│       │       │   └── tanamcare/
-│       │       │       ├── TanamCareFragment.kt
-│       │       │       └── TanamCareViewModel.kt
-│       │       │
-│       │       ├── iot/                      # [ADAM]
-│       │       │   ├── IoTConnectionFragment.kt
-│       │       │   └── IoTViewModel.kt
-│       │       │
-│       │       └── marketplace/              # [EVAN]
-│       │           ├── MarketFragment.kt
-│       │           ├── MarketViewModel.kt
-│       │           └── detail/
-│       │               └── ProductDetailFragment.kt
-│       │
-│       └── res/
-│           ├── values/
-│           │   ├── colors.xml                # Design tokens: palet warna Tanami
-│           │   ├── dimens.xml                # Spacing & typography tokens
-│           │   └── themes.xml                # Tema global Material3
-│           │
-│           ├── layout/                       # File XML per fragment/activity
-│           ├── drawable/                     # Icon & aset vektor
-│           └── font/                         # Font Manrope (semua varian)
-│
-├── 📄 GUIDE.md                               # ← File ini
-├── 📄 README.md
-└── 📄 build.gradle.kts
-```
-
----
-
-## 🎨 Design System & Tokens
-
-> [!NOTE]
-> Seluruh nilai di bawah ini **sudah didefinisikan** di `res/values/`. **Jangan pernah hardcode** angka warna atau ukuran langsung di XML layout. Gunakan token yang ada.
-
-### 🟢 Color Tokens (`colors.xml`)
-
-Tanami menggunakan palet hijau organik yang mencerminkan alam dan teknologi pertanian.
-
-| Token Name | Hex | Kegunaan |
-|---|---|---|
-| `@color/tanami_100` | `#edf8e8` | Background ringan, chip disabled |
-| `@color/tanami_300` | `#68dd30` | Aksen, highlight, ikon aktif |
-| `@color/tanami_500` | `#53be20` | **Warna utama brand** — tombol, badge |
-| `@color/tanami_700` | `#3D9315` | Hover state, pressed state |
-| `@color/tanami_800` | `#358110` | Header, elemen dominan |
-| `@color/tanami_900` | `#255d0a` | Teks di atas background hijau |
-| `@color/surface_dark` | `#1A1A1A` | Background kartu mode gelap |
-| `@color/text_primary` | `#111111` | Body text utama |
-| `@color/text_secondary` | `#6B6B6B` | Subtitle, placeholder |
-| `@color/text_on_primary` | `#FFFFFF` | Teks di atas tombol hijau |
-| `@color/error` | `#D32F2F` | State error, pesan validasi |
-| `@color/warning` | `#F57C00` | Alert sensor di luar batas |
-| `@color/success` | `#53be20` | Konfirmasi, status sehat |
-
-### ✏️ Typography Tokens (`dimens.xml` + `font/`)
-
-Font resmi Tanami adalah **Manrope**. Pastikan semua varian sudah ada di folder `res/font/`.
-
-```xml
-<!-- res/font/ — Pastikan file-file ini ada -->
-manrope_light.ttf
-manrope_regular.ttf
-manrope_medium.ttf
-manrope_semibold.ttf
-manrope_bold.ttf
-manrope_extrabold.ttf
-```
-
-| Token | Value | Penggunaan |
-|---|---|---|
-| `@dimen/text_h1` | `32sp` | Judul halaman utama |
-| `@dimen/text_h2` | `24sp` | Section header |
-| `@dimen/text_h3` | `20sp` | Card title |
-| `@dimen/text_h4` | `16sp` | Sub-judul, label bold |
-| `@dimen/text_subtitle1` | `16sp` | Subtitle besar |
-| `@dimen/text_subtitle2` | `14sp` | Subtitle sedang |
-| `@dimen/text_subtitle3` | `12sp` | Subtitle kecil, badge |
-| `@dimen/text_body1` | `16sp` | Body teks standar |
-| `@dimen/text_body2` | `14sp` | Body teks sekunder |
-| `@dimen/text_body3` | `12sp` | Caption kecil |
-| `@dimen/text_caption` | `10sp` | Label terkecil, timestamp |
-
-### 📐 Spacing Tokens (`dimens.xml`)
-
-Gunakan sistem spacing konsisten ini untuk margin & padding agar layout rapi dan seragam di semua layar.
-
-| Token | Value | Penggunaan |
-|---|---|---|
-| `@dimen/spacing_xxs` | `4dp` | Jarak antar ikon & label |
-| `@dimen/spacing_xs` | `8dp` | Padding dalam chip/badge |
-| `@dimen/spacing_sm` | `12dp` | Padding card internal kecil |
-| `@dimen/spacing_md` | `16dp` | **Spacing standar paling umum** |
-| `@dimen/spacing_lg` | `20dp` | Margin antar section |
-| `@dimen/spacing_xl` | `24dp` | Padding halaman |
-| `@dimen/spacing_xxl` | `32dp` | Hero section, top padding besar |
-| `@dimen/spacing_huge` | `48dp` | Jarak antar blok besar |
-| `@dimen/radius_sm` | `8dp` | Corner radius kecil |
-| `@dimen/radius_md` | `12dp` | Corner radius standar card |
-| `@dimen/radius_lg` | `16dp` | Modal, bottom sheet |
-| `@dimen/radius_pill` | `50dp` | Tombol pill, chip bulat |
-
----
-
-## 🧩 Komponen Kustom
-
-> [!IMPORTANT]
-> **Wajib menggunakan komponen di bawah ini** untuk semua tombol dan input di seluruh aplikasi. Jangan menggunakan `MaterialButton` atau `TextInputLayout` biasa secara langsung. Komponen kustom ini adalah jaminan konsistensi visual dengan desain Figma.
-
-### `TanamiButton`
-
-Komponen tombol utama Tanami yang mendukung beberapa varian state.
-
-**Cara pakai di XML:**
-```xml
-<com.tanami.app.ui.components.TanamiButton
-    android:id="@+id/btn_login"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text="Masuk"
-    app:tanamiButtonVariant="primary"  <!-- primary | secondary | ghost | danger -->
-    app:tanamiButtonSize="large"       <!-- small | medium | large -->
-    app:isLoading="false" />
-```
-
-**Cara pakai di Kotlin (ViewModel binding):**
-```kotlin
-// Aktifkan loading state saat request API berjalan
-binding.btnLogin.setLoading(true)
-
-// Kembalikan ke normal
-binding.btnLogin.setLoading(false)
-
-// Disable tombol
-binding.btnLogin.isEnabled = false
-```
-
-**Varian yang tersedia:**
-
-| Variant | Kegunaan |
-|---|---|
-| `primary` | Aksi utama (Login, Simpan, Konfirmasi) |
-| `secondary` | Aksi sekunder (Batal, Kembali) |
-| `ghost` | Aksi tersier tanpa background |
-| `danger` | Aksi destruktif (Hapus, Logout) |
-
----
-
-### `TanamiTextField`
-
-Input field yang sudah terintegrasi dengan validasi visual dan ikon.
-
-**Cara pakai di XML:**
-```xml
-<com.tanami.app.ui.components.TanamiTextField
-    android:id="@+id/tf_email"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    app:hint="Alamat Email"
-    app:inputType="textEmailAddress"
-    app:startIcon="@drawable/ic_email"
-    app:isRequired="true" />
-```
-
-**Cara pakai di Kotlin:**
-```kotlin
-// Ambil nilai teks
-val email = binding.tfEmail.getText()
-
-// Set error state
-binding.tfEmail.setError("Format email tidak valid")
-
-// Clear error
-binding.tfEmail.clearError()
-
-// Observasi perubahan teks
-binding.tfEmail.addTextChangedListener { text ->
-    viewModel.onEmailChanged(text.toString())
-}
-```
-
-> [!TIP]
-> Untuk field password, gunakan `app:inputType="textPassword"` — komponen akan otomatis menambahkan toggle show/hide password.
-
----
-
-## ⚙️ Alur Pengembangan Fitur (Step-by-Step)
-
-Ikuti alur ini secara **berurutan** setiap kali kamu membangun fitur baru. Jangan loncat-loncat tahap.
-
-```
-Figma Design
-     │
-     ▼
-① Slicing XML Layout
-     │
-     ▼
-② Buat Data Class (Response)
-     │
-     ▼
-③ Definisikan Endpoint di ApiService
-     │
-     ▼
-④ Buat / Update Repository
-     │
-     ▼
-⑤ Buat ViewModel
-     │
-     ▼
-⑥ Observasi di Fragment
-     │
-     ▼
-⑦ Test & Validasi
-```
-
----
-
-### **① Slicing UI di XML Layout**
-
-Mulai dari Figma. Translate design ke XML berdasarkan design tokens yang sudah ada.
-
-```xml
-<!-- res/layout/fragment_farming.xml -->
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="@dimen/spacing_xl"
-    android:orientation="vertical">
-
-    <TextView
-        android:text="Kondisi Tanaman"
-        android:textSize="@dimen/text_h2"
-        android:fontFamily="@font/manrope_bold"
-        android:textColor="@color/text_primary" />
-
-    <!-- Sensor Card -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_marginTop="@dimen/spacing_md"
-        app:cardCornerRadius="@dimen/radius_md"
-        app:cardBackgroundColor="@color/surface_dark">
-
-        <!-- isi card -->
-
-    </com.google.android.material.card.MaterialCardView>
-
-</LinearLayout>
-```
-
-> [!WARNING]
-> **Hardcode = Dosa.** Jangan pernah tulis seperti ini: `android:padding="16dp"` atau `android:textColor="#111111"`. Selalu gunakan token dari `dimens.xml` dan `colors.xml`.
-
----
-
-### **② Buat Data Class (Response)**
-
-Setiap response dari API dipetakan ke sebuah data class di `data/response/`.
-
-```kotlin
-// data/response/SensorResponse.kt
-data class SensorResponse(
-    @SerializedName("moisture")   val moisture: Float,
-    @SerializedName("tds")        val tds: Float,
-    @SerializedName("temp")       val temperature: Float,
-    @SerializedName("ph")         val phLevel: Float,
-    @SerializedName("status")     val healthStatus: String,
-    @SerializedName("timestamp")  val timestamp: Long
-)
-
-// Untuk response list
-data class PlantListResponse(
-    @SerializedName("data")    val plants: List<PlantItem>,
-    @SerializedName("total")  val total: Int,
-    @SerializedName("page")   val currentPage: Int
-)
-```
-
-> [!NOTE]
-> Selalu gunakan `@SerializedName` meskipun nama field sama persis dengan JSON. Ini mencegah masalah saat kode di-obfuscate oleh ProGuard di build release.
-
----
-
-### **③ Definisikan Endpoint di ApiService**
-
-Semua endpoint terpusat di satu file. **Jangan buat `ApiService` sendiri di modul masing-masing.**
-
-```kotlin
-// core/network/ApiService.kt
-interface ApiService {
-
-    // ─── AUTH (Azfa) ────────────────────────────────────────
-    @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
-
-    @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
-
-    // ─── DASHBOARD & IoT (Adam) ─────────────────────────────
-    @GET("sensor/latest")
-    suspend fun getLatestSensorData(): Response<SensorResponse>
-
-    @POST("device/control")
-    suspend fun controlDevice(@Body command: DeviceCommand): Response<CommandResponse>
-
-    // ─── SMART FARMING (Joya) ───────────────────────────────
-    @GET("plants")
-    suspend fun getPlantList(): Response<PlantListResponse>
-
-    @POST("tanamcare/diagnose")
-    @Multipart
-    suspend fun diagnosePlant(@Part image: MultipartBody.Part): Response<DiagnoseResponse>
-
-    // ─── MARKETPLACE (Evan) ─────────────────────────────────
-    @GET("market/products")
-    suspend fun getProducts(@Query("category") category: String?): Response<ProductListResponse>
-
-    @GET("market/products/{id}")
-    suspend fun getProductDetail(@Path("id") productId: String): Response<ProductResponse>
-}
-```
-
-Koordinasikan penambahan endpoint baru dengan Adam (sebagai maintainer `core/network/`) sebelum merge ke master.
-
----
-
-### **④ Buat / Update Repository**
-
-Repository adalah satu-satunya sumber data yang boleh diakses oleh ViewModel. **Tidak ada akses Retrofit langsung dari ViewModel.**
-
-```kotlin
-// data/repository/FarmingRepository.kt
-class FarmingRepository @Inject constructor(
-    private val apiService: ApiService
-) {
-
-    /**
-     * Ambil data sensor terbaru dari IoT Node.
-     * Selalu kembalikan NetworkResult agar ViewModel bisa handle semua state.
-     */
-    suspend fun getLatestSensorData(): NetworkResult<SensorResponse> {
-        return try {
-            val response = apiService.getLatestSensorData()
-            if (response.isSuccessful && response.body() != null) {
-                NetworkResult.Success(response.body()!!)
-            } else {
-                NetworkResult.Error("Gagal mengambil data: ${response.code()}")
-            }
-        } catch (e: Exception) {
-            NetworkResult.Error("Koneksi gagal: ${e.localizedMessage}")
-        }
-    }
-
-    suspend fun diagnosePlant(imageFile: File): NetworkResult<DiagnoseResponse> {
-        return try {
-            val requestFile = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("image", imageFile.name, requestFile)
-            val response = apiService.diagnosePlant(body)
-            if (response.isSuccessful && response.body() != null) {
-                NetworkResult.Success(response.body()!!)
-            } else {
-                NetworkResult.Error("Diagnosis gagal: ${response.message()}")
-            }
-        } catch (e: Exception) {
-            NetworkResult.Error(e.localizedMessage ?: "Terjadi kesalahan")
-        }
-    }
-}
-```
-
-**`NetworkResult` Sealed Class** (sudah ada di `core/network/`):
-
-```kotlin
-// core/network/NetworkResult.kt
-sealed class NetworkResult<out T> {
-    data class Success<T>(val data: T) : NetworkResult<T>()
-    data class Error(val message: String) : NetworkResult<Nothing>()
-    object Loading : NetworkResult<Nothing>()
-}
-```
-
----
-
-### **⑤ Buat ViewModel**
-
-ViewModel mengorkestrasi data antara Repository dan UI. Gunakan `StateFlow` untuk semua state.
-
-```kotlin
-// ui/farming/FarmingViewModel.kt
-@HiltViewModel
-class FarmingViewModel @Inject constructor(
-    private val farmingRepository: FarmingRepository
-) : ViewModel() {
-
-    // State untuk data sensor
-    private val _sensorState = MutableStateFlow<NetworkResult<SensorResponse>>(NetworkResult.Loading)
-    val sensorState: StateFlow<NetworkResult<SensorResponse>> = _sensorState.asStateFlow()
-
-    // State untuk diagnosis
-    private val _diagnoseState = MutableStateFlow<NetworkResult<DiagnoseResponse>?>(null)
-    val diagnoseState: StateFlow<NetworkResult<DiagnoseResponse>?> = _diagnoseState.asStateFlow()
-
-    init {
-        fetchSensorData()
-    }
-
-    fun fetchSensorData() {
-        viewModelScope.launch {
-            _sensorState.value = NetworkResult.Loading
-            _sensorState.value = farmingRepository.getLatestSensorData()
-        }
-    }
-
-    fun diagnosePlant(imageFile: File) {
-        viewModelScope.launch {
-            _diagnoseState.value = NetworkResult.Loading
-            _diagnoseState.value = farmingRepository.diagnosePlant(imageFile)
-        }
-    }
-}
-```
-
-> [!IMPORTANT]
-> **Gunakan `StateFlow`, bukan `LiveData`.** Proyek ini sepenuhnya berbasis Kotlin Coroutines. `LiveData` hanya boleh digunakan jika ada kebutuhan legacy yang sangat spesifik dan harus dikonsultasikan dulu.
-
----
-
-### **⑥ Observasi di Fragment**
-
-Fragment hanya boleh menangani: mengirim event ke ViewModel, dan merender state yang dikembalikan ViewModel. Tidak ada logika bisnis di Fragment.
-
-```kotlin
-// ui/farming/FarmingFragment.kt
-@AndroidEntryPoint
-class FarmingFragment : Fragment(R.layout.fragment_farming) {
-
-    private val viewModel: FarmingViewModel by viewModels()
-    private lateinit var binding: FragmentFarmingBinding
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        binding = FragmentFarmingBinding.bind(view)
-
-        setupObservers()
-        setupListeners()
-    }
-
-    private fun setupObservers() {
-        // Gunakan repeatOnLifecycle agar collection aman saat Fragment di-pause
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.sensorState.collect { state ->
-                    when (state) {
-                        is NetworkResult.Loading -> showLoadingState()
-                        is NetworkResult.Success -> renderSensorData(state.data)
-                        is NetworkResult.Error   -> showError(state.message)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun setupListeners() {
-        binding.btnRefresh.setOnClickListener {
-            viewModel.fetchSensorData()
-        }
-
-        binding.btnDiagnose.setOnClickListener {
-            // Buka camera / gallery picker
-        }
-    }
-
-    private fun renderSensorData(data: SensorResponse) {
-        binding.apply {
-            tvMoisture.text    = "${data.moisture}%"
-            tvTds.text         = "${data.tds} ppm"
-            tvTemperature.text = "${data.temperature}°C"
-            tvPhLevel.text     = "${data.phLevel} pH"
-        }
-    }
-
-    private fun showLoadingState() {
-        binding.shimmerLayout.startShimmer()
-        binding.shimmerLayout.visibility = View.VISIBLE
-        binding.contentGroup.visibility  = View.GONE
-    }
-
-    private fun showError(message: String) {
-        binding.shimmerLayout.stopShimmer()
-        binding.shimmerLayout.visibility = View.GONE
-        Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
-            .setBackgroundTint(requireContext().getColor(R.color.error))
-            .show()
-    }
-}
-```
-
----
-
-## 🌿 Git & RAD Workflow
-
-### Aturan Branch
-
-```
-master
-  └── feature-dashboard-adam     ← Adam
-  └── feature-auth-azfa          ← Azfa
-  └── feature-farming-joya       ← Joya
-  └── feature-market-evan        ← Evan
-```
-
-> [!CAUTION]
-> **Dilarang commit langsung ke `master`.** Semua perubahan harus melalui Pull Request dan mendapat approval minimal dari Adam (sebagai PM). Pelanggaran ini akan menyebabkan history yang kacau dan menyulitkan rollback.
-
-### Naming Convention Branch
-
+## ⚙️ 1. KONFIGURASI TEKNIS
+
+### Build Configuration
+- **Android Gradle Plugin (AGP)**: `9.1.1`
+- **Target SDK**: Android 21+ (JDK 21)
+- **Gradle Version**: `9.3.1`
+- **Kotlin Code Style**: `official`
+
+### Environment Setup
 ```bash
-# Format: feature-[modul]-[nama-developer]
-git checkout -b feature-auth-azfa
-git checkout -b feature-farming-joya
-git checkout -b feature-market-evan
-git checkout -b feature-dashboard-adam
+# Java Version
+jdk-name: jbr-21
+target: JDK_21
+
+# Gradle Memory
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
 ```
 
-### Cara Kerja Harian (Daily Flow)
+### IDE & Tools
+- **IDE**: Android Studio (latest)
+- **VCS**: Git
+- **Build System**: Gradle with Kotlin DSL
+- **Project Type**: Android Application
 
-Ikuti urutan ini **setiap hari** sebelum mulai coding:
+> ⚠️ **PENTING**: Pastikan Java JDK 21 sudah terinstall di mesin lokal Anda.
 
+---
+
+## 📂 2. STRUKTUR FOLDER (TEKNIS)
+
+Wajib mengikuti pemetaan folder di bawah ini agar arsitektur tetap terjaga:
+
+```
+TanamiApps/
+│
+├── gradle/                           # Gradle Configuration
+│   ├── wrapper/
+│   │   └── gradle-wrapper.properties # Gradle 9.3.1 Configuration
+│   ├── gradle-daemon-jvm.properties  # JVM Toolchain Config (v21)
+│   └── libs.versions.toml            # Version Catalog (Centralized Dependencies)
+│
+├── app/                              # Main Application Module
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/tanami/app/  # Source Code
+│   │   │   │   ├── core/             # Foundation Layer (Publik)
+│   │   │   │   │   ├── network/      # Retrofit Config, API Service, Interceptor
+│   │   │   │   │   ├── utils/        # Constants, Extensions, Helpers
+│   │   │   │   │   └── base/         # Base Classes (Activity, Fragment, ViewModel)
+│   │   │   │   │
+│   │   │   │   ├── data/             # Data Layer (Single Source of Truth)
+│   │   │   │   │   ├── local/        # DataStore, SharedPreferences, Room Database
+│   │   │   │   │   ├── remote/       # DTOs, API Responses, API Services Interface
+│   │   │   │   │   └── repository/   # Repository Implementation (Local + Remote)
+│   │   │   │   │
+│   │   │   │   ├── ui/               # Presentation Layer (Main Work Area)
+│   │   │   │   │   ├── auth/         # 👤 Adam - Authentication & Pre-Auth
+│   │   │   │   │   │   ├── login/    # LoginActivity/Fragment, LoginViewModel
+│   │   │   │   │   │   ├── register/ # RegisterActivity/Fragment, RegisterViewModel
+│   │   │   │   │   │   └── onboarding/ # Onboarding UI
+│   │   │   │   │   │
+│   │   │   │   │   ├── dashboard/    # 📊 Azfa - Core IoT & Dashboard
+│   │   │   │   │   │   ├── home/     # HomeFragment, HomeViewModel (Real-time sensor data)
+│   │   │   │   │   │   ├── siram/    # SiramFragment, SiramViewModel (Aktuator control)
+│   │   │   │   │   │   └── components/ # Dashboard-specific components
+│   │   │   │   │   │
+│   │   │   │   │   ├── farming/      # 🌱 Joya - Smart Farming & Detection
+│   │   │   │   │   │   ├── guide/    # GuideFragment, GuideViewModel (Plant guides)
+│   │   │   │   │   │   ├── disease/  # DiseaseDetectionFragment (CameraX, ML Kit)
+│   │   │   │   │   │   └── components/ # Farming-specific components
+│   │   │   │   │   │
+│   │   │   │   │   ├── commerce/     # 💼 Evan - Marketplace & Commerce
+│   │   │   │   │   │   ├── marketplace/ # MarketplaceFragment, ProductListViewModel
+│   │   │   │   │   │   ├── detail/   # DetailProductFragment, DetailViewModel
+│   │   │   │   │   │   ├── cart/     # CartFragment, CartViewModel
+│   │   │   │   │   │   └── profile/  # ProfileFragment, SettingsViewModel
+│   │   │   │   │   │
+│   │   │   │   │   └── components/   # 🎨 Reusable UI Kit
+│   │   │   │   │       ├── TanamiButton.kt
+│   │   │   │   │       ├── TanamiTextField.kt
+│   │   │   │   │       ├── TanamiCard.kt
+│   │   │   │   │       └── ...other custom components
+│   │   │   │   │
+│   │   │   │   └── di/               # Dependency Injection Modules
+│   │   │   │       ├── NetworkModule.kt
+│   │   │   │       ├── RepositoryModule.kt
+│   │   │   │       └── ViewModelModule.kt
+│   │   │   │
+│   │   │   └── res/                  # Resources
+│   │   │       ├── layout/           # XML Layout Files
+│   │   │       ├── drawable/         # Images, Vectors, Drawables
+│   │   │       ├── values/
+│   │   │       │   ├── strings.xml   # Text Resources
+│   │   │       │   ├── colors.xml    # Color Palette
+│   │   │       │   ├── dimens.xml    # Spacing & Typography (USE THESE!)
+│   │   │       │   └── themes.xml    # App Theme
+│   │   │       ├── values-night/     # Dark Mode Resources
+│   │   │       └── menu/             # Menu Definitions
+│   │   │
+│   │   ├── test/                     # Unit Tests
+│   │   └── androidTest/              # Instrumented Tests (UI Testing)
+│   │
+│   └── build.gradle.kts              # Module-level Build Configuration
+│
+├── .idea/                            # Android Studio Configuration (DO NOT COMMIT)
+│   ├── .gitignore                    # Ignore IDE cache files
+│   ├── gradle.xml                    # Gradle Settings
+│   ├── misc.xml                      # Project Settings (JDK 21)
+│   ├── vcs.xml                       # VCS Configuration
+│   └── ...other IDE configs
+│
+├── .gitignore                        # Git Ignore Rules (IDE & Build artifacts)
+├── build.gradle.kts                  # Top-level Build Configuration
+├── settings.gradle.kts               # Gradle Settings & Modules Definition
+├── gradle.properties                 # Global Gradle Properties
+├── gradlew                           # Gradle Wrapper (Linux/Mac)
+├── gradlew.bat                       # Gradle Wrapper (Windows)
+│
+└── README.md                         # Project Documentation
+
+```
+
+### Penjelasan Setiap Layer
+
+#### **Core Layer** - Fondasi Publik
+| Folder | Tujuan | Contoh |
+|--------|--------|--------|
+| `core/network/` | API Configuration | RetrofitClient, ApiService, Interceptors |
+| `core/utils/` | Utility Functions | Constants, Extensions, DateFormatter |
+| `core/base/` | Base Classes | BaseActivity, BaseFragment, BaseViewModel |
+
+#### **Data Layer** - Single Source of Truth
+| Folder | Tujuan | Contoh |
+|--------|--------|--------|
+| `data/local/` | Local Storage | UserPreferences, RoomDatabase, SessionManager |
+| `data/remote/` | API Models | LoginResponse, SensorDataDTO, UserDTO |
+| `data/repository/` | Business Logic | UserRepository, SensorRepository |
+
+#### **UI Layer** - Presentation & User Interaction
+| Folder | Owner | Tujuan |
+|--------|-------|--------|
+| `ui/auth/` | Adam | Login, Register, Onboarding |
+| `ui/dashboard/` | Azfa | Home Dashboard, Siram Controls |
+| `ui/farming/` | Joya | Plant Guides, Disease Detection |
+| `ui/commerce/` | Evan | Marketplace, Shopping Cart, Profile |
+| `ui/components/` | Team | Reusable UI Components |
+
+---
+
+## 👥 3. PEMBAGIAN TUGAS (TASK MATRIX)
+
+Bekerjalah **HANYA** di folder yang sudah ditentukan untuk menghindari conflict:
+
+### Ownership Matrix
+
+| Developer | Modul Utama | Folder Target | Tanggung Jawab |
+|-----------|-------------|---------------|---|
+| **Adam** | Dashboard & IoT | `ui/dashboard/` | • HomeFragment (Dashboard) <br> • SiramFragment (Kontrol Aktuator) <br> • Real-time Data Visualization <br> • Sensor Integration |
+| **Azfa** | Authentication | `ui/auth/` | • LoginFragment <br> • RegisterFragment <br> • Onboarding Flow <br> • Session Management |
+| **Joya** | Smart Farming | `ui/farming/` | • GuideFragment (Plant Encyclopedia) <br> • DiseaseDetectionFragment (CameraX + ML) <br> • Plant Care Tips |
+| **Evan** | E-Commerce | `ui/commerce/` | • MarketplaceFragment <br> • ProductDetailFragment <br> • CartFragment <br> • ProfileFragment |
+
+### Shared Responsibility
+
+| Area | Owner | Kontributor |
+|------|-------|-------------|
+| `core/` | Adam | Semua developer (koordinasi) |
+| `data/` | Adam | Semua developer |
+| `ui/components/` | Team | Semua developer |
+| `di/` | Adam | Semua developer |
+
+---
+
+## 🚦 4. ATURAN CODING & GIT
+
+### 4.1 Standar Kode
+
+#### ✅ **WAJIB MENGIKUTI**
+
+1. **Gunakan Component Global**
+   ```kotlin
+   // ✅ BENAR
+   TanamiButton(
+       text = "Login",
+       onClick = { viewModel.login() }
+   )
+   
+   TanamiTextField(
+       value = email,
+       onValueChange = { email = it },
+       label = "Email"
+   )
+   
+   // ❌ SALAH
+   Button(text = "Login") // Jangan gunakan material Button langsung
+   TextField(...) // Jangan langsung gunakan TextField
+   ```
+
+2. **Gunakan Resource Dimensions**
+   ```kotlin
+   // ✅ BENAR
+   val textSize = resources.getDimension(R.dimen.text_body)
+   val spacing = resources.getDimension(R.dimen.spacing_medium)
+   
+   // ❌ SALAH
+   val textSize = 16f
+   val padding = 16.dp
+   ```
+
+3. **Struktur Fragment dengan ViewModel**
+   ```kotlin
+   class LoginFragment : Fragment() {
+       private val viewModel: LoginViewModel by viewModels()
+       
+       override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+           super.onViewCreated(view, savedInstanceState)
+           
+           // Observe ViewModel data
+           viewModel.loginState.observe(viewLifecycleOwner) { state ->
+               // Handle UI state
+           }
+       }
+   }
+   ```
+
+4. **Naming Convention**
+   ```
+   Activities       : [Feature]Activity.kt      → LoginActivity.kt
+   Fragments        : [Feature]Fragment.kt      → LoginFragment.kt
+   ViewModels       : [Feature]ViewModel.kt     → LoginViewModel.kt
+   Repositories     : [Feature]Repository.kt    → UserRepository.kt
+   Layouts          : fragment_[name].xml       → fragment_login.xml
+   ```
+
+### 4.2 Git Workflow
+
+#### **Sebelum Mulai Ngoding**
 ```bash
-# ① Pastikan kamu di branch fiturmu sendiri
-git checkout feature-farming-joya
-
-# ② Sync dengan master terbaru untuk menghindari konflik
+# 1. Update branch master
 git fetch origin
-git merge origin/master
+git pull origin master
 
-# ③ Selesaikan konflik (kalau ada) — jangan panik, ini normal
-# Buka file yang konflik, pilih perubahan yang benar, lalu:
-git add .
-git commit -m "merge: sync with latest master"
-
-# ④ Mulai coding...
-
-# ⑤ Commit dengan pesan yang bermakna
-git add .
-git commit -m "feat(farming): tambah sensor card dengan animasi shimmer"
-
-# ⑥ Push ke remote branch kamu
-git push origin feature-farming-joya
+# 2. Buat branch fitur (dari master)
+git checkout -b feature/[modul]-[deskripsi]
+# Contoh: feature/auth-login-page
+#         feature/dashboard-home-screen
+#         feature/farming-disease-detection
+#         feature/commerce-cart-system
 ```
 
-### Format Commit Message
-
-Gunakan format **Conventional Commits** agar history mudah dibaca:
-
-| Prefix | Kapan Digunakan |
-|--------|----------------|
-| `feat:` | Fitur baru |
-| `fix:` | Bug fix |
-| `ui:` | Perubahan tampilan saja |
-| `refactor:` | Refactor kode tanpa mengubah fungsionalitas |
-| `chore:` | Update dependency, config, dll |
-| `docs:` | Update dokumentasi |
-| `merge:` | Sync dengan branch lain |
-
-**Contoh commit yang baik:**
+#### **Selama Ngoding**
 ```bash
-git commit -m "feat(auth): implementasi login dengan validasi email & password"
-git commit -m "fix(iot): perbaiki NSD listener yang crash saat WiFi putus"
-git commit -m "ui(dashboard): update warna card sensor sesuai Figma v2.3"
-git commit -m "refactor(market): pisah ProductAdapter ke file terpisah"
+# 1. Commit dengan pesan jelas
+git add .
+git commit -m "[MODULE] Deskripsi perubahan"
+# Contoh: git commit -m "[AUTH] Implementasi LoginFragment & LoginViewModel"
+#         git commit -m "[DASHBOARD] Tambah real-time sensor display"
+
+# 2. Push ke branch fitur
+git push origin feature/[modul]-[deskripsi]
 ```
 
-**Contoh commit yang BURUK (jangan ditiru):**
+#### **Selesai Ngoding - Minta Review**
 ```bash
-git commit -m "update"         # ← Tidak informatif sama sekali
-git commit -m "fix bug"        # ← Bug apa? Di mana?
-git commit -m "wip"            # ← Commit WIP ke remote? Jangan.
-git commit -m "asdfghjkl"      # ← Ini bukan seni, ini anarki
+# 1. Pastikan branch sudah up-to-date
+git fetch origin
+git rebase origin/master
+
+# 2. Push final changes
+git push origin feature/[modul]-[deskripsi] --force-with-lease
+
+# 3. Buat Pull Request di GitHub
+#    - Title: [MODULE] Feature description
+#    - Body: Jelaskan perubahan & testing yang sudah dilakukan
+#    - Assign ke: PM (untuk review)
+
+# 4. Setelah approval, merge ke master
+git checkout master
+git pull origin master
+git merge feature/[modul]-[deskripsi]
+git push origin master
 ```
 
-### Prosedur Pull Request
+#### **Git Commit Message Format**
+```
+[MODULE] Short description (max 50 chars)
 
-Ketika fiturmu sudah siap untuk diintegrasikan:
+Optional body:
+- Detail 1
+- Detail 2
+- Testing notes
+```
 
-1. **Push branch terbaru** ke remote
-2. **Buka PR** di GitHub dengan template berikut:
+**Contoh:**
+```
+[AUTH] Implementasi LoginFragment & LoginViewModel
 
-```markdown
-## 📋 Deskripsi Perubahan
-[Jelaskan apa yang kamu tambahkan/ubah]
+- Buat UI login dengan TanamiTextField & TanamiButton
+- Integrasi dengan UserRepository untuk validasi
+- Tambah error handling & loading state
+- Tested: Login berhasil, error message muncul
+```
 
-## 🎯 Modul yang Terpengaruh
-- [ ] Auth
-- [ ] Dashboard
-- [ ] Smart Farming
-- [ ] Marketplace
+### 4.3 Pull Request Checklist
 
-## ✅ Checklist
-- [ ] Sudah sync dengan master terbaru
-- [ ] Tidak ada hardcode warna/ukuran
+Sebelum submit PR, pastikan:
+
+- [ ] Code sudah di-test (manual UI testing)
+- [ ] Tidak ada hardcoded values (gunakan resources)
 - [ ] Menggunakan TanamiButton & TanamiTextField
-- [ ] Error state sudah di-handle
-- [ ] Loading state sudah di-handle
-- [ ] Tidak ada Log.d() yang tertinggal di production code
+- [ ] Commit message jelas & descriptive
+- [ ] Tidak ada merge conflicts
+- [ ] Branch sudah rebase dengan master terbaru
+- [ ] Docs updated (jika ada API changes)
 
-## 📸 Screenshot / Screen Recording
-[Tempel screenshot atau GIF demo fiturmu di sini]
+---
+
+## 💻 5. CARA SETUP LOKAL
+
+### Prerequisites
+- **Android Studio**: 2024.1 or latest
+- **Java JDK**: 21 (jbr-21)
+- **Gradle**: 9.3.1 (automatic via wrapper)
+- **Git**: Latest version
+
+### Setup Steps
+
+```bash
+# 1. Clone Repository
+git clone https://github.com/Orenjikuso/TanamiApps.git
+cd TanamiApps
+
+# 2. Pastikan menggunakan JDK 21
+# File > Project Structure > SDK Location
+# Pastikan JDK path menunjuk ke jbr-21
+
+# 3. Sync Gradle
+# Android Studio akan otomatis men-download dependencies
+# Atau manual: ./gradlew sync
+
+# 4. Setup Local Properties (jika diperlukan)
+# Buat file local.properties di root project:
+# sdk.dir=/path/to/Android/SDK
+
+# 5. Run Gradle Build
+./gradlew build
+
+# 6. Run App (pilih satu)
+# Via Android Studio: Run > Run 'app'
+# Via CLI: ./gradlew installDebug
 ```
 
-3. **Tag Adam** sebagai reviewer
-4. **Tunggu approval** sebelum merge
+### Troubleshooting
+
+| Error | Solusi |
+|-------|--------|
+| `JAVA_HOME not found` | Set JAVA_HOME ke path JDK 21 |
+| `Gradle sync failed` | Delete `.gradle` folder & sync ulang |
+| `Module not found` | Check `settings.gradle.kts` include modules |
+| `Build failed: unsupported class version` | Pastikan JDK 21 di gunakan |
 
 ---
 
-## 📏 Konvensi Kode
+## 📚 6. DEPENDENCY & LIBRARY
 
-### Penamaan File & Class
+### Centralized Version Management
+Semua dependency versions ada di `gradle/libs.versions.toml`:
 
-| Tipe | Konvensi | Contoh |
-|------|----------|--------|
-| Fragment | `[Nama]Fragment` | `LoginFragment` |
-| ViewModel | `[Nama]ViewModel` | `LoginViewModel` |
-| Repository | `[Nama]Repository` | `AuthRepository` |
-| Data Class | `[Nama]Response` / `[Nama]Request` | `LoginResponse`, `LoginRequest` |
-| Adapter | `[Nama]Adapter` | `ProductAdapter` |
-| Layout XML | `fragment_[nama].xml` | `fragment_login.xml` |
-| Item XML | `item_[nama].xml` | `item_product.xml` |
+```toml
+[versions]
+agp = "9.1.1"                    # Android Gradle Plugin
+coreKtx = "1.10.1"               # AndroidX Core
+appcompat = "1.6.1"              # AppCompat
+material = "1.10.0"              # Material Design 3
+activity = "1.8.0"               # Activity Library
+constraintlayout = "2.1.4"       # ConstraintLayout
 
-### Penamaan View ID di XML
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
-Gunakan format `[tipe]_[deskripsi]`:
-
-```xml
-<!-- ✅ Benar -->
-android:id="@+id/tv_moisture_value"
-android:id="@+id/btn_submit_login"
-android:id="@+id/rv_product_list"
-android:id="@+id/img_plant_thumbnail"
-android:id="@+id/tf_email_input"
-
-<!-- ❌ Salah -->
-android:id="@+id/text1"
-android:id="@+id/button"
-android:id="@+id/recyclerView"
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
 ```
 
-### Urutan Atribut XML
+### Menggunakan Dependencies
 
-Selalu tulis atribut XML dalam urutan ini untuk konsistensi:
+```kotlin
+// Di build.gradle.kts
+dependencies {
+    // Gunakan version catalog
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    
+    // Testing
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+}
+```
 
-```xml
-<View
-    android:id="@+id/..."              <!-- 1. ID -->
-    android:layout_width="..."         <!-- 2. Dimensi -->
-    android:layout_height="..."
-    android:layout_margin..."          <!-- 3. Layout params -->
-    android:padding="..."              <!-- 4. Padding -->
-    android:background="..."           <!-- 5. Visual -->
-    android:text="..."                 <!-- 6. Konten -->
-    android:textSize="..."             <!-- 7. Text styling -->
-    android:textColor="..."
-    app:..."                           <!-- 8. Custom attrs -->
-    tools:..." />                      <!-- 9. Tools attrs (terakhir) -->
+### Library Recommendations
+
+Untuk fitur-fitur yang akan digunakan:
+
+| Fitur | Library | Versi |
+|-------|---------|-------|
+| **Networking** | Retrofit | Latest (Tambah ke libs.versions.toml) |
+| **Image Loading** | Coil / Glide | Latest |
+| **Database** | Room | androidx.room:room-runtime |
+| **Async** | Coroutines | org.jetbrains.kotlinx:kotlinx-coroutines |
+| **Dependency Injection** | Hilt | com.google.dagger:hilt-android |
+| **Camera** | CameraX | androidx.camera:camera-core |
+| **ML Kit** | ML Kit Vision | com.google.mlkit:vision-common |
+| **Local Storage** | DataStore | androidx.datastore:datastore |
+
+> ℹ️ **Tambah library**: Update `gradle/libs.versions.toml` → Sync Gradle → Gunakan di code
+
+---
+
+## 📝 NOTES & BEST PRACTICES
+
+### Do's ✅
+- ✅ Selalu gunakan Repository pattern untuk data access
+- ✅ Gunakan ViewModel untuk business logic
+- ✅ Implement proper error handling & user feedback
+- ✅ Test UI locally sebelum commit
+- ✅ Communicate changes dalam team
+- ✅ Review code dari rekan sebelum merge
+- ✅ Keep components reusable & modular
+
+### Don'ts ❌
+- ❌ Jangan hardcode values (Strings, Colors, Dimens)
+- ❌ Jangan commit ke master langsung
+- ❌ Jangan merge PR tanpa review
+- ❌ Jangan modify file di folder orang lain tanpa koordinasi
+- ❌ Jangan gunakan deprecated APIs
+- ❌ Jangan push ke repository dengan credentials
+
+---
+
+## 🔗 Referensi Berguna
+
+- [Android Architecture Components](https://developer.android.com/topic/architecture)
+- [Android MVVM Pattern](https://developer.android.com/jetpack/architecture/mvvm)
+- [Kotlin Documentation](https://kotlinlang.org/docs/)
+- [Material Design 3](https://m3.material.io/)
+- [Git Workflow Guide](https://git-scm.com/book/en/v2/Git-Branching-Workflow)
+
+---
+
+## 📞 Hubungi PM untuk:
+
+- Clarification tentang requirements
+- Conflict resolution antar developer
+- Adding new dependencies/libraries
+- Major architecture changes
+- Release planning & testing
+
+---
+
+**Last Updated**: 2026-05-01  
+**Version**: 1.0  
+**Status**: ✅ Active
+
 ```
 
 ---
 
-## ✅ Checklist Sebelum Pull Request
+Saya telah membuat file `GUIDE.md` yang komprehensif berdasarkan file-file yang Anda kirimkan. File ini mencakup:
 
-Sebelum membuka PR, pastikan semua item di bawah ini sudah centang:
+### 📌 **Konten Utama:**
 
-**Kode & Arsitektur**
-- [ ] Semua logika bisnis ada di ViewModel/Repository, bukan di Fragment
-- [ ] Tidak ada akses `ApiService` langsung dari ViewModel
-- [ ] `NetworkResult` digunakan untuk semua state (Loading/Success/Error)
-- [ ] Tidak ada `!!` (force unwrap) kecuali sudah ada null check sebelumnya
+1. **Konfigurasi Teknis** - Build setup, JDK 21, Gradle 9.3.1
+2. **Struktur Folder Lengkap** - Pemetaan detail dengan penjelasan setiap layer
+3. **Pembagian Tugas** - Ownership matrix per developer & module
+4. **Aturan Coding & Git** - Standar kode, commit format, workflow
+5. **Setup Lokal** - Step-by-step installation & troubleshooting
+6. **Dependencies** - Version catalog & library recommendations
 
-**Design System**
-- [ ] Semua warna menggunakan `@color/...` token
-- [ ] Semua ukuran teks menggunakan `@dimen/text_...`
-- [ ] Semua spacing menggunakan `@dimen/spacing_...`
-- [ ] Tombol menggunakan `TanamiButton`
-- [ ] Input field menggunakan `TanamiTextField`
-- [ ] Font family menggunakan `@font/manrope_...`
+### ✨ **Fitur:**
+- Daftar isi untuk navigasi mudah
+- Tabel-tabel untuk referensi cepat
+- Contoh kode untuk implementation
+- Checklist untuk PR submission
+- Do's & Don'ts section
 
-**UX State**
-- [ ] Loading state sudah ditangani (shimmer/progress indicator)
-- [ ] Error state sudah ditangani (Snackbar atau error view)
-- [ ] Empty state sudah ditangani (ilustrasi kosong)
-- [ ] Tombol di-disable saat loading untuk mencegah double-submit
-
-**Git**
-- [ ] Branch sudah sync dengan master terbaru
-- [ ] Tidak ada file `.idea/`, `.gradle/`, atau file build yang ikut di-commit
-- [ ] Commit message mengikuti konvensi Conventional Commits
-- [ ] Tidak ada `Log.d()` atau `println()` yang tertinggal
-
----
-
-<div align="center">
-
----
-
-**Tanami Android Team**
-*Dikembangkan dengan ❤️ dan banyak kopi ☕ untuk ketahanan pangan perkotaan*
-
-`Adam` · `Azfa` · `Joya` · `Evan`
-
----
-
-*Last updated: Mei 2026 · v1.0.0*
-
-</div>
+File ini siap digunakan dan dapat disesuaikan sesuai kebutuhan tim Anda!
