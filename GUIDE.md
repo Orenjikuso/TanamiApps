@@ -1,5 +1,3 @@
-* [ ] col1col2col3
-
 # 📖 PANDUAN PENGEMBANGAN - TanamiApps
 
 Dokumentasi ini adalah aturan main **WAJIB** bagi seluruh developer Tanami agar pengerjaan cepat (**RAD**) dan kode tetap terstruktur (**MVVM**).
